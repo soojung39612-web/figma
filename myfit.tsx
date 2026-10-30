@@ -1,4 +1,4 @@
-import {useState,useEffect,useRef,type ReactNode} from 'react';
+import {useState,useEffect,useRef,useId,type ReactNode} from 'react';
 import {createRoot} from 'react-dom/client';
 import {ArrowLeft,Check,Search,UserCircle,Menu,ShoppingBag,Circle,Store,Zap,ChevronRight,ChevronLeft,Settings,Footprints,Package,X,Heart,Plus,Minus,LogOut,CalendarDays,MapPin,LogIn} from 'lucide-react';
 import './myfit.css';
@@ -19,9 +19,10 @@ function useSaved<T,>(key:string,initial:T,migrate?:(value:unknown)=>T){const [v
 function Button({children,onClick,secondary=false,disabled=false}:{children:ReactNode;onClick:()=>void;secondary?:boolean;disabled?:boolean}){return <button className={'pill '+(secondary?'secondary':'primary')} onClick={onClick} disabled={disabled}>{children}</button>}
 function Heading({eyebrow,title,desc}:{eyebrow:string;title:string;desc?:string}){return <div className="heading"><p className="eyebrow">{eyebrow}</p><h1>{title}</h1>{desc&&<p className="muted">{desc}</p>}</div>}
 function Photo({kind='shoe',product=0}:{kind?:'hero'|'detail'|'shoe';product?:number}){
- const isDetail=kind==='detail';const source=isDetail&&product===0?detailImage:product===0?homeImage:matchImage;
+ const clipId=useId();const isDetail=kind==='detail';const source=isDetail&&product===0?detailImage:product===0?homeImage:matchImage;
  const viewBox=isDetail&&product===0?'21 187 359 239':product===0?'46 129 310 180':product===1?'267 607 116 77':'263 830 116 77';
- return <div className={'photo product-photo '+kind+' product-photo-'+product} role="img" aria-label={products[product].name+' 상품 사진'}><svg viewBox={viewBox} preserveAspectRatio="xMidYMid meet" aria-hidden="true"><image href={source} width="402" height={source===matchImage?'1115':'874'}/></svg></div>;
+ const [cropX,cropY,cropWidth,cropHeight]=viewBox.split(' ').map(Number);
+ return <div className={'photo product-photo '+kind+' product-photo-'+product} role="img" aria-label={products[product].name+' 상품 사진'}><svg viewBox={viewBox} preserveAspectRatio="xMidYMid meet" aria-hidden="true"><defs><clipPath id={clipId}><rect x={cropX} y={cropY} width={cropWidth} height={cropHeight}/></clipPath></defs><image clipPath={'url(#'+clipId+')'} href={source} width="402" height={source===matchImage?'1115':'874'}/></svg></div>;
 }
 type Checkout={source:'cart'|'direct';items:Item[]};
 function App(){
