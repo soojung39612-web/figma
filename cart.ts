@@ -1,5 +1,5 @@
 export type Item = { product: number; insole: number; qty: number };
-export type Order = { items: Item[]; total: number; id: string };
+export type Order = { items: Item[]; total: number; id: string; createdAt?: string; paymentMethod?: string };
 export const itemKey = (item: Item) => `${item.product}:${item.insole}`;
 
 // Preserve baskets saved by the previous single-product version.
@@ -43,5 +43,11 @@ export function normalizeOrder(value: unknown): Order | null {
   const old = value as Order & Item;
   const items = normalizeCart(old.items ?? old);
   return items.length && typeof old.id === 'string' && typeof old.total === 'number'
-    ? { items, id: old.id, total: old.total } : null;
+    ? { items, id: old.id, total: old.total,
+        ...(typeof old.createdAt==='string'?{createdAt:old.createdAt}:{}),
+        ...(typeof old.paymentMethod==='string'?{paymentMethod:old.paymentMethod}:{}) } : null;
+}
+
+export function normalizeOrders(value: unknown): Order[] {
+  return (Array.isArray(value)?value:[]).map(normalizeOrder).filter((order):order is Order=>order!==null);
 }
