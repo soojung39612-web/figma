@@ -1,3 +1,4 @@
+import {products} from './catalog.ts';
 export type Item = { product: number; insole: number; qty: number };
 export type Order = { items: Item[]; total: number; id: string; createdAt?: string; paymentMethod?: string; delivery?: {name:string;phone:string;address:string;detail:string}; guest?: boolean };
 export const itemKey = (item: Item) => `${item.product}:${item.insole}`;
@@ -9,7 +10,7 @@ export function normalizeCart(value: unknown): Item[] {
   for (const row of rows) {
     if (!row || typeof row !== 'object') continue;
     const { product, insole, qty } = row as Item;
-    if (!Number.isInteger(product) || product < 0 || product > 2 ||
+    if (!Number.isInteger(product) || product < 0 || product >= products.length ||
         !Number.isInteger(insole) || insole < 0 || insole > 2 ||
         !Number.isInteger(qty) || qty < 1) continue;
     const existing = items.find(item => itemKey(item) === itemKey(row));
