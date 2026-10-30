@@ -163,7 +163,7 @@ export function useMemberField<T,>(key:string,initial:T,migrate?:(value:unknown)
   return [value,set] as const;
 }
 
-export function AuthPanel({onDone}:{onDone:()=>void}){
+export function AuthPanel({onDone,beforeLogin}:{onDone:()=>void;beforeLogin?:()=>void}){
   const auth=useMember();const [tab,setTab]=useState<'login'|'signup'|'reset'|'find'>('login');const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const [error,setError]=useState('');const [keepCart,setKeepCart]=useState(true);
   const guestCount=normalizeCart(auth.data.cart).reduce((sum,item)=>sum+item.qty,0);
   async function submit(event:React.FormEvent<HTMLFormElement>){
@@ -179,9 +179,9 @@ export function AuthPanel({onDone}:{onDone:()=>void}){
       }else if(tab==='signup'){
         if(password!==String(form.get('confirmPassword')))throw new Error('비밀번호 확인이 일치하지 않습니다.');
         if(!form.get('consent'))throw new Error('회원정보 저장 동의가 필요합니다.');
-        const signedIn=await auth.signUp(email,password,String(form.get('name')).trim(),String(form.get('phone')).trim(),keepCart);
+        beforeLogin?.();const signedIn=await auth.signUp(email,password,String(form.get('name')).trim(),String(form.get('phone')).trim(),keepCart);
         if(signedIn)onDone();else setMessage('이메일을 확인해 가입을 완료한 다음 로그인해 주세요.');
-      }else{await auth.signIn(email,password,keepCart);onDone();}
+      }else{beforeLogin?.();await auth.signIn(email,password,keepCart);onDone();}
     }catch(e){const code=(e as {code?:string}).code;setError(tab==='find'&&e instanceof Error?e.message:code==='invalid_credentials'?'이메일 또는 비밀번호를 확인해 주세요.':code==='email_not_confirmed'?'이메일 인증을 완료한 후 로그인해 주세요.':code==='over_email_send_rate_limit'?'이메일 전송 요청이 많습니다. 잠시 후 다시 시도해 주세요.':e instanceof Error&&/비밀번호 확인|회원정보 저장/.test(e.message)?e.message:'요청을 처리하지 못했습니다. 입력 내용을 확인하고 다시 시도해 주세요.');}finally{setBusy(false);}
   }
   if(auth.recovery)return <form onSubmit={submit}><p className="muted">새 비밀번호를 설정해 주세요.</p><label>새 비밀번호<input type="password" name="password" autoComplete="new-password" minLength={8} maxLength={128} required/></label><label>비밀번호 확인<input type="password" name="confirmPassword" autoComplete="new-password" minLength={8} maxLength={128} required/></label>{error&&<p className="form-error" role="alert">{error}</p>}<button className="pill primary" type="submit" disabled={busy}>{busy?'저장 중…':'비밀번호 변경'}</button></form>;
