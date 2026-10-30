@@ -164,12 +164,16 @@ export function useMemberField<T,>(key:string,initial:T,migrate?:(value:unknown)
 }
 
 export function AuthPanel({onDone}:{onDone:()=>void}){
-  const auth=useMember();const [tab,setTab]=useState<'login'|'signup'|'reset'>('login');const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const [error,setError]=useState('');const [keepCart,setKeepCart]=useState(true);
+  const auth=useMember();const [tab,setTab]=useState<'login'|'signup'|'reset'|'find'>('login');const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const [error,setError]=useState('');const [keepCart,setKeepCart]=useState(true);
   const guestCount=normalizeCart(auth.data.cart).reduce((sum,item)=>sum+item.qty,0);
   async function submit(event:React.FormEvent<HTMLFormElement>){
     event.preventDefault();if(busy)return;const form=new FormData(event.currentTarget);const email=String(form.get('email')).trim();const password=String(form.get('password')??'');setBusy(true);setError('');setMessage('');
     try{
       if(auth.recovery){if(password!==String(form.get('confirmPassword')))throw new Error('비밀번호 확인이 일치하지 않습니다.');await auth.changePassword(password);onDone();
+      }else if(tab==='find'){
+        const response=await fetch(authConfig.url+'/functions/v1/myfit-account-lookup',{method:'POST',headers:{'Content-Type':'application/json',apikey:authConfig.publishableKey},body:JSON.stringify({name:String(form.get('name')).trim(),phone:String(form.get('phone')).trim()})});
+        const result=await response.json();if(!response.ok)throw new Error(result.error||'아이디를 조회하지 못했습니다.');
+        setMessage(result.emails?.length?'가입한 아이디(이메일): '+result.emails.join(', '):'일치하는 가입 정보를 찾지 못했습니다. 이름과 가입한 연락처를 확인해 주세요.');
       }else if(tab==='reset'){
         const {error:failure}=await client!.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/#account'});if(failure)throw failure;setMessage('가입된 이메일이라면 비밀번호 재설정 안내를 보냈습니다.');
       }else if(tab==='signup'){
@@ -178,18 +182,20 @@ export function AuthPanel({onDone}:{onDone:()=>void}){
         const signedIn=await auth.signUp(email,password,String(form.get('name')).trim(),String(form.get('phone')).trim(),keepCart);
         if(signedIn)onDone();else setMessage('이메일을 확인해 가입을 완료한 다음 로그인해 주세요.');
       }else{await auth.signIn(email,password,keepCart);onDone();}
-    }catch(e){const code=(e as {code?:string}).code;setError(code==='invalid_credentials'?'이메일 또는 비밀번호를 확인해 주세요.':code==='email_not_confirmed'?'이메일 인증을 완료한 후 로그인해 주세요.':code==='over_email_send_rate_limit'?'이메일 전송 요청이 많습니다. 잠시 후 다시 시도해 주세요.':e instanceof Error&&/비밀번호 확인|회원정보 저장/.test(e.message)?e.message:'요청을 처리하지 못했습니다. 입력 내용을 확인하고 다시 시도해 주세요.');}finally{setBusy(false);}
+    }catch(e){const code=(e as {code?:string}).code;setError(tab==='find'&&e instanceof Error?e.message:code==='invalid_credentials'?'이메일 또는 비밀번호를 확인해 주세요.':code==='email_not_confirmed'?'이메일 인증을 완료한 후 로그인해 주세요.':code==='over_email_send_rate_limit'?'이메일 전송 요청이 많습니다. 잠시 후 다시 시도해 주세요.':e instanceof Error&&/비밀번호 확인|회원정보 저장/.test(e.message)?e.message:'요청을 처리하지 못했습니다. 입력 내용을 확인하고 다시 시도해 주세요.');}finally{setBusy(false);}
   }
   if(auth.recovery)return <form onSubmit={submit}><p className="muted">새 비밀번호를 설정해 주세요.</p><label>새 비밀번호<input type="password" name="password" autoComplete="new-password" minLength={8} maxLength={128} required/></label><label>비밀번호 확인<input type="password" name="confirmPassword" autoComplete="new-password" minLength={8} maxLength={128} required/></label>{error&&<p className="form-error" role="alert">{error}</p>}<button className="pill primary" type="submit" disabled={busy}>{busy?'저장 중…':'비밀번호 변경'}</button></form>;
   if(auth.user)return <div className="auth-signed-in"><p>{auth.user.email}</p><button className="pill primary" onClick={onDone}>마이페이지로 이동</button></div>;
   return <div className="auth-panel"><p className="muted auth-intro">내 발에 맞춘 쇼핑을 이어가세요.<br/>장바구니와 주문 내역을 계정에 보관합니다.</p><div className="auth-tabs"><button className={tab==='login'?'selected':''} onClick={()=>{setTab('login');setError('');setMessage('')}}>로그인</button><button className={tab==='signup'?'selected':''} onClick={()=>{setTab('signup');setError('');setMessage('')}}>회원가입</button></div>{!auth.configured&&<p className="auth-notice" role="status">로그인 서비스를 준비하고 있어요. 연결이 완료되면 회원가입과 계정 저장을 이용할 수 있습니다.</p>}<form onSubmit={submit}>
-    {tab==='signup'&&<><label>이름<input name="name" autoComplete="name" required maxLength={30}/></label><label>연락처<input name="phone" autoComplete="tel" type="tel" required pattern="[0-9+() -]{8,20}"/></label></>}
-    <label>이메일<input name="email" type="email" autoComplete="email" required maxLength={254} placeholder="name@example.com"/></label>
-    {tab!=='reset'&&<label>비밀번호<input name="password" type="password" autoComplete={tab==='signup'?'new-password':'current-password'} required minLength={8} maxLength={128} placeholder={tab==='signup'?'8자 이상 입력하세요':'비밀번호를 입력하세요'} disabled={!auth.configured}/></label>}
+    {tab==='find'&&<><h3>아이디(이메일) 찾기</h3><p className="muted">가입한 이름과 연락처를 입력해 주세요. 개인정보 보호를 위해 이메일 일부만 표시합니다.</p></>}
+    {(tab==='signup'||tab==='find')&&<><label>이름<input name="name" autoComplete="name" required maxLength={30}/></label><label>연락처<input name="phone" autoComplete="tel" type="tel" required pattern="[0-9+() -]{8,20}"/></label></>}
+    {tab!=='find'&&<label>이메일<input name="email" type="email" autoComplete="email" required maxLength={254} placeholder="name@example.com"/></label>}
+    {(tab==='login'||tab==='signup')&&<label>비밀번호<input name="password" type="password" autoComplete={tab==='signup'?'new-password':'current-password'} required minLength={8} maxLength={128} placeholder={tab==='signup'?'8자 이상 입력하세요':'비밀번호를 입력하세요'} disabled={!auth.configured}/></label>}
     {tab==='signup'&&<><label>비밀번호 확인<input name="confirmPassword" type="password" autoComplete="new-password" required minLength={8} maxLength={128} disabled={!auth.configured}/></label><label className="check-label"><input type="checkbox" name="consent" required/>이름·연락처·쇼핑 정보를 계정에 저장하는 데 동의합니다.</label></>}
-    {guestCount>0&&tab!=='reset'&&<label className="check-label"><input type="checkbox" checked={keepCart} onChange={e=>setKeepCart(e.target.checked)}/>현재 장바구니 {guestCount}개를 내 계정에 함께 저장</label>}
+    {guestCount>0&&(tab==='login'||tab==='signup')&&<label className="check-label"><input type="checkbox" checked={keepCart} onChange={e=>setKeepCart(e.target.checked)}/>현재 장바구니 {guestCount}개를 내 계정에 함께 저장</label>}
     {error&&<p role="alert" className="form-error">{error}</p>}{message&&<p role="status" className="form-success">{message}</p>}
-    <button type="submit" className="pill primary" disabled={busy||!auth.configured}>{busy?'처리 중…':tab==='signup'?'회원가입':tab==='reset'?'재설정 이메일 보내기':'로그인'}</button>
-    {tab==='login'&&<button type="button" className="auth-reset" onClick={()=>{setTab('reset');setError('');setMessage('')}}>비밀번호를 잊으셨나요?</button>}
+    <button type="submit" className="pill primary" disabled={busy||!auth.configured}>{busy?'처리 중…':tab==='signup'?'회원가입':tab==='reset'?'재설정 이메일 보내기':tab==='find'?'아이디 찾기':'로그인'}</button>
+    {tab==='login'&&<><button type="button" className="auth-reset" onClick={()=>{setTab('find');setError('');setMessage('')}}>아이디(이메일)를 잊으셨나요?</button><button type="button" className="auth-reset" onClick={()=>{setTab('reset');setError('');setMessage('')}}>비밀번호를 잊으셨나요?</button></>}
+    {(tab==='find'||tab==='reset')&&<button type="button" className="auth-reset" onClick={()=>{setTab('login');setError('');setMessage('')}}>로그인으로 돌아가기</button>}
   </form></div>;
 }
