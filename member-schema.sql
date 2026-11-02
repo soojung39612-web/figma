@@ -7,7 +7,7 @@ create table if not exists public.myfit_members (
 );
 alter table public.myfit_members enable row level security;
 alter table public.myfit_members force row level security;
-revoke all on public.myfit_members from anon;
+revoke all on public.myfit_members from public, anon, authenticated;
 grant select, insert, update on public.myfit_members to authenticated;
 create policy "Members read their own data" on public.myfit_members
   for select to authenticated using ((select auth.uid()) = user_id);

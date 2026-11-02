@@ -22,3 +22,9 @@ body{scrollbar-width:none}body::-webkit-scrollbar{display:none}.app-shell:has(.s
 
 .official-photo{background:#f5f5f5!important;padding:0!important}.official-photo img{display:block;width:100%;height:100%;object-fit:contain}.shop-categories{overflow-x:auto}.shop-categories button{flex:1 0 auto;white-space:nowrap}.shop-catalog-count{font-size:10px;color:#999;margin:-10px 0 14px}.official-product-link{display:block;color:#aaa;font-size:11px;text-align:right;margin:-20px 0 22px}.shop-product .official-photo{height:150px}.detail-photo .official-photo img{object-fit:contain}
 .product-photo.official-photo img{position:static;inset:auto;transform:none;margin:0;max-width:100%;object-position:center}
+
+.account-identity{font-size:11px;color:#aaa;overflow-wrap:anywhere;margin:-12px 2px 18px}
+
+.sync-alert{background:#37251b;padding:14px 16px;font-size:11px;line-height:1.8}.sync-alert button{border:1px solid #977254;border-radius:7px;padding:6px 10px;margin:9px 8px 0 0}
+
+.signup-title{margin:0 0 18px}.account-help .pill{margin-top:14px}.guest-order-result{margin-top:20px}.guest-order-result h3{font-size:16px;margin-bottom:12px}.guest-order-result dl{font-size:12px;line-height:1.8}.guest-order-result dd{margin:0 0 12px;overflow-wrap:anywhere}.guest-order-result dt{color:#999}.guest-order-line{border-bottom:1px solid #444;padding:12px 0;font-size:12px}
