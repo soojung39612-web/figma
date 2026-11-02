@@ -20,15 +20,17 @@ const rules:Record<number,FitRule>={
  13:{widths:['narrow','regular'],arches:['normal'],min:220,max:285,purposes:[2],reason:'가벼운 일상 스타일 분류',cushion:1},
  14:{widths:['regular'],arches:['normal'],min:220,max:290,purposes:[1,2],reason:'워킹·데일리 분류',cushion:2}
 };
-export function memberRecommendations(purpose:number,measurement:Measurement|undefined){
+export function memberRecommendations(purpose:number|null,measurement:Measurement|undefined){
  if(!measurement||(measurement.example&&!measurement.demo))return [];
  const width=/넓|2E|4E/i.test(measurement.widthLabel)?'wide':/좁|슬림/.test(measurement.widthLabel)?'narrow':/보통|표준|normal|regular/i.test(measurement.widthLabel)?'regular':null;
  const arch=/낮|평발/.test(measurement.archLabel)?'low':/높|요족/.test(measurement.archLabel)?'high':/보통|표준|normal/i.test(measurement.archLabel)?'normal':null;
  const length=Math.max(measurement.leftLength,measurement.rightLength);
- if(!width||!arch||!Number.isFinite(length)||length<=0||purpose<0||purpose>3)return [];
+ if(!width||!arch||!Number.isFinite(length)||length<=0||(purpose!==null&&(purpose<0||purpose>3)))return [];
  return products.flatMap((product,index)=>{
-  const rule=rules[index];if(!rule||!rule.widths.includes(width)||!rule.arches.includes(arch)||length<rule.min||length>rule.max||!rule.purposes.includes(purpose))return [];
+  const rule=rules[index];if(!rule||!rule.widths.includes(width)||length<rule.min||length>rule.max)return [];
+  const archMatch=rule.arches.includes(arch);
+  if(purpose!==null&&(!archMatch||!rule.purposes.includes(purpose)))return [];
   const rank=(purpose===3||arch==='high'?rule.cushion*4:rule.cushion)+(arch==='low'&&index===1?10:0)+(width==='wide'&&index===0?4:0);
-  return [{...product,index,rank,profileReason:`${measurement.demo?'시연값':'실측'} ${length}mm · ${measurement.widthLabel} · ${measurement.archLabel}. ${rule.reason}이 회원 조건과 일치합니다.`}];
+  return [{...product,index,rank:rank+(archMatch?100:0),profileReason:`${measurement.demo?'시연값':'실측'} ${length}mm · ${measurement.widthLabel} · ${measurement.archLabel}. ${archMatch?rule.reason+' 기준으로 우선 추천합니다.':'발 길이·발볼 기준 비교 추천입니다. 아치 지지력은 매장 착화 확인이 필요합니다.'}`}];
  }).sort((a,b)=>b.rank-a.rank||a.index-b.index).slice(0,3);
 }

@@ -1,3 +1,4 @@
+import {formatPhone} from './phone';
 import {GuestReservationLookup} from './reservation-lookup';
 import {createDemoMeasurement,normalizeMeasurements} from './measurements';
 import {createContext,useCallback,useContext,useEffect,useRef,useState,type Dispatch,type ReactNode,type SetStateAction} from 'react';
@@ -215,7 +216,7 @@ export function AuthPanel({onDone,beforeLogin,allowGuestLookup=true,guestKind='o
   return <div className="auth-panel"><p className="muted auth-intro">내 발에 맞춘 쇼핑을 이어가세요.<br/>장바구니와 주문 내역을 계정에 보관합니다.</p>{allowGuestLookup&&tab==='login'&&<div className="auth-tabs"><button className="selected">로그인</button><button onClick={()=>changeTab('guest')}>비회원</button></div>}
   {!auth.configured&&<p className="auth-notice" role="status">로그인 서비스를 준비하고 있어요. 연결이 완료되면 회원가입과 계정 저장을 이용할 수 있습니다.</p>}<form onSubmit={submit}>
     {tab==='find'&&<><h3>아이디(이메일) 찾기</h3><p className="muted">가입한 이름과 연락처를 입력해 주세요. 개인정보 보호를 위해 이메일 일부만 표시합니다.</p></>}
-    {tab==='signup'&&<h3 className="signup-title">회원가입</h3>}{(tab==='signup'||tab==='find')&&<><label>이름<input name="name" autoComplete="name" required maxLength={30}/></label><label>연락처<input name="phone" autoComplete="tel" type="tel" required pattern="[0-9+() -]{8,20}"/></label></>}
+    {tab==='signup'&&<h3 className="signup-title">회원가입</h3>}{(tab==='signup'||tab==='find')&&<><label>이름<input name="name" autoComplete="name" required maxLength={30}/></label><label>연락처<input name="phone" autoComplete="tel" type="tel" inputMode="numeric" placeholder="010-0000-0000" maxLength={13} onChange={event=>{event.currentTarget.value=formatPhone(event.currentTarget.value)}} required pattern="010-[0-9]{4}-[0-9]{4}"/></label></>}
     {tab==='signup'&&<><label>주소<input name="address" autoComplete="street-address" required maxLength={150} placeholder="도로명 또는 지번 주소"/></label><label>상세주소<input name="detail" autoComplete="address-line2" maxLength={100} placeholder="동·호수 등"/></label></>}{tab!=='find'&&<label>이메일<input name="email" type="email" autoComplete="email" required maxLength={254} placeholder="name@example.com"/></label>}
     {(tab==='login'||tab==='signup')&&<label>비밀번호<input name="password" type="password" autoComplete={tab==='signup'?'new-password':'current-password'} required minLength={8} maxLength={128} placeholder={tab==='signup'?'8자 이상 입력하세요':'비밀번호를 입력하세요'} disabled={!auth.configured}/></label>}
     {tab==='signup'&&<><label>비밀번호 확인<input name="confirmPassword" type="password" autoComplete="new-password" required minLength={8} maxLength={128} disabled={!auth.configured}/></label><label className="check-label"><input type="checkbox" name="consent" required/>이름·연락처·쇼핑 정보를 계정에 저장하는 데 동의합니다.</label></>}
