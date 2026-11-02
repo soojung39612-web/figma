@@ -1,3 +1,4 @@
+import {GuestReservationLookup} from './reservation-lookup';
 import {createContext,useCallback,useContext,useEffect,useRef,useState,type Dispatch,type ReactNode,type SetStateAction} from 'react';
 import {createClient,type User} from '@supabase/supabase-js';
 import {authConfig} from './auth-config';
@@ -177,7 +178,7 @@ export function useMemberField<T,>(key:string,initial:T,migrate?:(value:unknown)
   return [value,set] as const;
 }
 
-export function AuthPanel({onDone,beforeLogin,allowGuestLookup=true}:{onDone:()=>void;beforeLogin?:()=>void;allowGuestLookup?:boolean}){
+export function AuthPanel({onDone,beforeLogin,allowGuestLookup=true,guestKind='orders'}:{onDone:()=>void;beforeLogin?:()=>void;allowGuestLookup?:boolean;guestKind?:'orders'|'reservations'}){
   const auth=useMember();const [tab,setTab]=useState<'login'|'signup'|'reset'|'find'|'help'|'guest'>('login');const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const [error,setError]=useState('');const [keepCart,setKeepCart]=useState(false);
   const guestCount=normalizeCart(auth.data.cart).reduce((sum,item)=>sum+item.qty,0);
   async function submit(event:React.FormEvent<HTMLFormElement>){
@@ -202,7 +203,7 @@ export function AuthPanel({onDone,beforeLogin,allowGuestLookup=true}:{onDone:()=
   if(auth.user)return <div className="auth-signed-in"><p>{auth.user.email}</p><button className="pill primary" onClick={onDone}>마이페이지로 이동</button></div>;
   const changeTab=(next:typeof tab)=>{setTab(next);setError('');setMessage('')};
   if(tab==='help')return <div className="account-help"><p className="muted">찾으려는 정보를 선택해 주세요.</p><button className="pill secondary" onClick={()=>changeTab('find')}>아이디(이메일) 찾기</button><button className="pill secondary" onClick={()=>changeTab('reset')}>비밀번호 찾기</button><button className="auth-reset" onClick={()=>changeTab('login')}>로그인으로 돌아가기</button></div>;
-  if(tab==='guest')return <><div className="auth-tabs"><button onClick={()=>changeTab('login')}>로그인</button><button className="selected">비회원</button></div><GuestOrderLookup/></>;
+  if(tab==='guest')return <><div className="auth-tabs"><button onClick={()=>changeTab('login')}>로그인</button><button className="selected">비회원</button></div>{guestKind==='reservations'?<GuestReservationLookup/>:<GuestOrderLookup/>}</>;
   return <div className="auth-panel"><p className="muted auth-intro">내 발에 맞춘 쇼핑을 이어가세요.<br/>장바구니와 주문 내역을 계정에 보관합니다.</p>{allowGuestLookup&&tab==='login'&&<div className="auth-tabs"><button className="selected">로그인</button><button onClick={()=>changeTab('guest')}>비회원</button></div>}
   {!auth.configured&&<p className="auth-notice" role="status">로그인 서비스를 준비하고 있어요. 연결이 완료되면 회원가입과 계정 저장을 이용할 수 있습니다.</p>}<form onSubmit={submit}>
     {tab==='find'&&<><h3>아이디(이메일) 찾기</h3><p className="muted">가입한 이름과 연락처를 입력해 주세요. 개인정보 보호를 위해 이메일 일부만 표시합니다.</p></>}

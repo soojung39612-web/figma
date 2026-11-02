@@ -4,9 +4,9 @@ const baseUrl=Deno.env.get('SUPABASE_URL')!;
 const secret=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const allowedOrigins=new Set(['https://kda01.kro.kr','https://figma-seven-silk.vercel.app']);
 const baseHeaders={apikey:secret,Authorization:'Bearer '+secret,'Content-Type':'application/json'};
-const selection='id,guest_name,phone_last4,store_id,visit_date,visit_time,created_at';
+const selection='id,guest_name,phone_last4,store_id,visit_date,visit_time,created_at,cancelled_at';
 async function digest(value:string){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),b=>b.toString(16).padStart(2,'0')).join('');}
-function reservation(row:Record<string,any>,code:string){const [year,month,day]=row.visit_date.split('-').map(Number);return {id:row.id,code,createdAt:row.created_at,year,month,day,store:row.store_id,time:row.visit_time,name:row.guest_name,phoneLast4:row.phone_last4,guest:true};}
+function reservation(row:Record<string,any>,code:string){const [year,month,day]=row.visit_date.split('-').map(Number);return {id:row.id,code,createdAt:row.created_at,year,month,day,store:row.store_id,time:row.visit_time,name:row.guest_name,phoneLast4:row.phone_last4,guest:true,cancelledAt:row.cancelled_at??null};}
 Deno.serve(async(req:Request)=>{
  const origin=req.headers.get('origin');
  const headers={'Content-Type':'application/json','Cache-Control':'no-store','Vary':'Origin','Access-Control-Allow-Origin':origin&&allowedOrigins.has(origin)?origin:'https://kda01.kro.kr','Access-Control-Allow-Headers':'apikey,content-type,authorization,x-client-info','Access-Control-Allow-Methods':'POST,OPTIONS'};
@@ -22,8 +22,14 @@ Deno.serve(async(req:Request)=>{
   const lookupHash=await digest(code+'|'+phone);
   const lookup=await fetch(baseUrl+'/rest/v1/myfit_guest_reservations?select='+selection+'&lookup_hash=eq.'+lookupHash,{headers:baseHeaders});
   if(!lookup.ok)throw new Error('lookup unavailable');const existing=await lookup.json();
-  if(existing.length)return reply(200,{reservation:reservation(existing[0],code)});
-  if(action==='lookup')return reply(404,{error:'예약번호 또는 연락처가 일치하지 않습니다.'});
+  if(existing.length){
+   if(action==='cancel'&&!existing[0].cancelled_at){
+    const cancelledAt=new Date().toISOString();const updated=await fetch(baseUrl+'/rest/v1/myfit_guest_reservations?id=eq.'+existing[0].id+'&lookup_hash=eq.'+lookupHash,{method:'PATCH',headers:{...baseHeaders,Prefer:'return=minimal'},body:JSON.stringify({cancelled_at:cancelledAt})});
+    if(!updated.ok)throw new Error('cancel unavailable');existing[0].cancelled_at=cancelledAt;
+   }
+   return reply(200,{reservation:reservation(existing[0],code)});
+  }
+  if(action==='lookup'||action==='cancel')return reply(404,{error:'예약번호 또는 연락처가 일치하지 않습니다.'});
   if(action!=='create')return reply(400,{error:'올바른 예약 요청이 아닙니다.'});
   const name=String(body.name??'').trim();const slot=body.slot??{};const year=Number(slot.year),month=Number(slot.month),day=Number(slot.day),store=Number(slot.store),time=String(slot.time??'');
   const date=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;const parsed=new Date(date+'T00:00:00Z');

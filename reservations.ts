@@ -1,5 +1,5 @@
 import {authConfig} from './auth-config.ts';
-export type Reservation={id?:string;code?:string;createdAt?:string;year?:number;store:number;day:number;month:number;time:string;name?:string;phoneLast4?:string;guest?:boolean};
+export type Reservation={id?:string;code?:string;createdAt?:string;year?:number;store:number;day:number;month:number;time:string;name?:string;phoneLast4?:string;guest?:boolean;cancelledAt?:string|null};
 export const reservationKey=(r:Reservation)=>r.id??`legacy-${r.year??2027}-${r.month}-${r.day}-${r.store}-${r.time}`;
 export function normalizeReservations(value:unknown):Reservation[]{
   return (Array.isArray(value)?value:value?[value]:[]).filter((r):r is Reservation=>Boolean(r)&&typeof r==='object'&&Number.isInteger(r.store)&&r.store>=0&&r.store<3&&Number.isInteger(r.month)&&r.month>=1&&r.month<=12&&Number.isInteger(r.day)&&r.day>=1&&r.day<=31&&typeof r.time==='string').sort((a,b)=>(Date.parse(b.createdAt??'')||0)-(Date.parse(a.createdAt??'')||0));

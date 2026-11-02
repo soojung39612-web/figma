@@ -14,3 +14,4 @@ alter table public.myfit_guest_reservations enable row level security;
 alter table public.myfit_guest_reservations force row level security;
 revoke all on public.myfit_guest_reservations from public,anon,authenticated;
 grant select,insert on public.myfit_guest_reservations to service_role;
+alter table public.myfit_guest_reservations add column if not exists cancelled_at timestamptz; grant update(cancelled_at) on public.myfit_guest_reservations to service_role;
