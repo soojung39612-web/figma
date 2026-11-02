@@ -1,4 +1,5 @@
 import {GuestReservationLookup} from './reservation-lookup';
+import {createDemoMeasurement,normalizeMeasurements} from './measurements';
 import {createContext,useCallback,useContext,useEffect,useRef,useState,type Dispatch,type ReactNode,type SetStateAction} from 'react';
 import {createClient,type User} from '@supabase/supabase-js';
 import {authConfig} from './auth-config';
@@ -105,15 +106,19 @@ export function MemberProvider({children}:{children:ReactNode}){
         if(current!==generation.current)return;
         const loaded:MemberData={...initialMember(user),...(record?.data??{})};
         revision.current=record?.revision??0;exists.current=Boolean(record);confirmed.current={...loaded};
+        if(!loaded.scanDemoDismissed&&!normalizeMeasurements(loaded.measurements).some(row=>!row.example||row.demo)){
+          loaded.measurements=[createDemoMeasurement(user.id)];dirty.current=true;
+        }
         try{const pending=JSON.parse(sessionStorage.getItem(pendingKey(user.id))??'null');if(pending){Object.assign(loaded,mergeMemberChanges(pending.base,pending.data,loaded));dirty.current=true;}}catch{/* Ignore a malformed cache, never another account's cache. */}
+        let mergedGuestCart=false;
         if(pendingMerge.current){
           const guest=readGuest();
           loaded.cart=normalizeCart(guest.cart).reduce((items,item)=>addCartItem(items,item),normalizeCart(loaded.cart));
           // Only the explicitly selected guest basket is transferred, never another visitor's profile/order data.
-          pendingMerge.current=false;dirty.current=true;
+          pendingMerge.current=false;dirty.current=true;mergedGuestCart=true;
         }
         latest.current=loaded;setData(loaded);ready.current=true;
-        if(dirty.current){await flush();const guest=readGuest();guest.cart=[];sessionStorage.setItem(guestKey,JSON.stringify(guest));}
+        if(dirty.current){await flush();if(mergedGuestCart){const guest=readGuest();guest.cart=[];sessionStorage.setItem(guestKey,JSON.stringify(guest));}}
         setLoading(false);
       }catch{
         if(current!==generation.current)return;

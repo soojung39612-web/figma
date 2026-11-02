@@ -1,8 +1,13 @@
 export type Measurement = {
-  id:string; measuredAt:string|null; store:string; example:boolean;
+  id:string; measuredAt:string|null; store:string; example:boolean;demo?:boolean;
   leftLength:number; rightLength:number; widthLabel:string; archLabel:string;
 };
 export const exampleMeasurement:Measurement={id:'example-gangnam',measuredAt:'2026-10-28T14:00:00+09:00',store:'나이키 강남 플래그십',example:true,leftLength:230,rightLength:232,widthLabel:'2E / 넓음',archLabel:'낮은 아치'};
+export function createDemoMeasurement(userId:string):Measurement{
+ const seed=Array.from(userId).reduce((sum,char)=>sum+char.charCodeAt(0),0);
+ const length=230+(seed%11)*5;
+ return {id:'demo-'+userId,measuredAt:null,store:'시연용 데이터 · 실제 매장 측정 아님',example:true,demo:true,leftLength:length,rightLength:length+2,widthLabel:seed%2?'2E / 넓음':'보통 발볼',archLabel:seed%2?'낮은 아치':'보통 아치'};
+}
 export function measurementDate(value:string|null|undefined){
   if(!value||!Number.isFinite(new Date(value).getTime()))return '날짜 미등록';
   return new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(value));
