@@ -37,3 +37,4 @@ body{scrollbar-width:none}body::-webkit-scrollbar{display:none}.app-shell:has(.s
 
 .booking-banner{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:17px}.booking-banner strong{display:block;width:100%;font-size:24px;line-height:1.35;text-align:center;letter-spacing:-.9px}.booking-banner span{display:block;font-size:11px;line-height:1.9;text-align:center}@media(max-width:380px){.booking-banner strong{font-size:22px}.booking-banner span{font-size:10px}}
 .booking-banner span{font-size:10.5px;margin-top:0}@media(max-width:380px){.booking-banner span{font-size:10px}}
+.product-photo.official-photo img{object-fit:cover;object-position:center 65%}.shop-feature .official-photo,.shop-product .official-photo{padding:0!important}.detail-photo .official-photo img{object-fit:contain}.product-photo.official-photo{background:#ebebeb!important}
