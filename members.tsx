@@ -106,10 +106,13 @@ export function MemberProvider({children}:{children:ReactNode}){
         if(current!==generation.current)return;
         const loaded:MemberData={...initialMember(user),...(record?.data??{})};
         revision.current=record?.revision??0;exists.current=Boolean(record);confirmed.current={...loaded};
-        if(!loaded.scanDemoDismissed&&!normalizeMeasurements(loaded.measurements).some(row=>!row.example||row.demo)){
-          loaded.measurements=[createDemoMeasurement(user.id)];dirty.current=true;
-        }
         try{const pending=JSON.parse(sessionStorage.getItem(pendingKey(user.id))??'null');if(pending){Object.assign(loaded,mergeMemberChanges(pending.base,pending.data,loaded));dirty.current=true;}}catch{/* Ignore a malformed cache, never another account's cache. */}
+        // Seed a completed visit once for the presentation; preserve actual measurements.
+        if(loaded.scanPresentationVersion!==2){
+          const actual=normalizeMeasurements(loaded.measurements).filter(row=>!row.example);
+          loaded.measurements=actual.length?actual:[createDemoMeasurement(user.id)];
+          loaded.scanPresentationVersion=2;loaded.scanDemoDismissed=false;dirty.current=true;
+        }
         let mergedGuestCart=false;
         if(pendingMerge.current){
           const guest=readGuest();
